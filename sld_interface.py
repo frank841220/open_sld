@@ -7,12 +7,13 @@
 #   Version 0.0.1  -  4/25/14
 #
 #------------------------------------------------------------------------------
+from __future__ import print_function
 
 import ctypes as c
 import subprocess
 from time import sleep
 from bitstring import BitArray
-
+from sys import platform as _platform
 from ftdi import *
 
 
@@ -142,12 +143,11 @@ class CSV_Writer(object):
     def write(self, buff):
         
         # buff is a ctypes array of bytes
-               
+        
         for i in range(c.sizeof(buff)):
             bits = reversed(list('000000' + bin(buff[i])[2:]) + [str(self.step)])
-            print >>self.cvs, ','.join(bits)
-            
-            self.step +=  1
+            print(','.join(bits),self.cvs)
+            self.step += 1
             
     #----
     #
@@ -171,7 +171,7 @@ class CSV_Writer(object):
     
     def close(self):
         self.cvs.close()
-        print '%s closed' % self.fn
+        print("%s closed" % self.fn)
 
 #-------------------------------------------------------------------------------
 #
@@ -213,7 +213,7 @@ def dataBuffer(bits, rd=False):
         else:
             data_bytes += M1D0
             
-#     print 'dataBuffer %s' % decoded(data_bytes)
+#     print(dataBuffer %s' % decoded(data_bytes))
             
     return tx_buffer(data_bytes)
 
@@ -233,7 +233,7 @@ class SLD_Controller(object):
             self.interface = CSV_Writer(csv_file_name)
         else:        
             self.interface = open_ex_by_name(interface_name)
-        
+                    
         self.instruction_width  = 10
         self.virtual_inst_width = m_width
         self.node_adrs_width    = n_width
@@ -323,15 +323,26 @@ class SLD_Controller(object):
 
 # Program the DE0-Nano
 
-print 'Programming ...'
-command_line = 'quartus_pgm -c USB-Blaster -m JTAG -o p;InitialTest.sof'
-r = subprocess.call(command_line)
-print 'return code:', r
+'''print('Programming ...')
+if _platform == "linux" or _platform == "linux2":
+    # linux
+    command_line = 'quartus_pgm -c USB-Blaster -m JTAG -o "p;InitialTest.sof"'
+    r = subprocess.call(command_line,shell=True)
+elif _platform == "darwin":
+    # OS X
+    command_line = 'quartus_pgm -c USB-Blaster -m JTAG -o "p;InitialTest.sof"'
+    r = subprocess.call(command_line,shell=True)
+elif _platform == "win32":
+    # Windows...
+    command_line = 'quartus_pgm -c USB-Blaster -m JTAG -o p;InitialTest.sof'
+    r = subprocess.call(command_line)
 
-print
-print 'Testing'
+print('return code:', r)'''
 
-sld = SLD_Controller('USB-Blaster', 4, 1)
+print()
+print('Testing')
+
+sld = SLD_Controller(b'USB-Blaster', 4, 1)
 
 # For debug
 #sld = SLD_Controller('CSV', 4, 1, 'test2.csv')
@@ -341,11 +352,11 @@ sld.TAP_Reset()
 d = 0
 while True:
     
-    sld.VIR_Write(1, BitArray('0b10001')) 
+    sld.VIR_Write(1, BitArray('0b10001'))
     read_back = sld.VDR_Write_Read(BitArray(uint=d, length=7))
     sld.VIR_Write(1, BitArray('0b10000'))
     
-    print read_back.bin
+    print(read_back.bin)
     
     if d == 127:
         d = 0
@@ -357,24 +368,24 @@ while True:
     
 sld.TAP_Reset()
 sld.close()
-print 
-print 'closed'
-print 'Done'
+print()
+print('closed')
+print('Done')
 
 #-------------------------------------------------------------------------------
 #
 # dev = list_devices()
-# print 'devices:', dev
+# print(devices:, dev)
 #  
 # result = get_device_info_list()
-# print 'info:'
+# print('info')
 # for info in result:
 #     for k,v in info.items():
-#         print '  %12s : %s' % (k, v)
+#         print('%12s : %s' % (k, v))
 #          
 # result = get_device_info_detail()
-# print
-# print 'detail:'
+# print()
+# print('detail:')
 # for k,v in result.items():
-#     print '  %12s : %s' % (k, v)
+#     print('%12s : %s' % (k, v))
 #              
